@@ -13,7 +13,7 @@ import java.net.InetAddress;
 import java.lang.Thread;
 
 public class Battleship {
-	public static String API_KEY = "API_KEY_HERE"; ///////// PUT YOUR API KEY HERE /////////
+	public static String API_KEY = System.getenv("BattleShipAPIKey");
 	public static String GAME_SERVER = "battleshipgs.purduehackers.com";
 
 	//////////////////////////////////////  PUT YOUR CODE HERE //////////////////////////////////////
@@ -26,11 +26,11 @@ public class Battleship {
 		for(int i = 0; i < grid.length; i++) { for(int j = 0; j < grid[i].length; j++) grid[i][j] = -1; }
 
 		// Place Ships
-		placeDestroyer("A0", "A1");
-		placeSubmarine("B0", "B2");
-		placeCruiser("C0", "C2");
-		placeBattleship("D0", "D3");
-		placeCarrier("E0", "E4");
+		placeDestroyer("D0", "D1");
+		placeSubmarine("E0", "E2");
+		placeCruiser("F0", "F2");
+		placeBattleship("G0", "G3");
+		placeCarrier("H0", "H4");
 	}
 
 	void makeMove() {
@@ -98,7 +98,7 @@ public class Battleship {
 
 
 	public void gameMain() {
-		while(true) {
+		while (true) {
 			try {
 				if (this.dataPassthrough == null) {
 					this.data = this.br.readLine();
@@ -111,6 +111,7 @@ public class Battleship {
 				System.out.println("IOException: in gameMain"); 
 				ioe.printStackTrace();
 			}
+
 			if (this.data == null) {
 				try { this.socket.close(); } 
 				catch (IOException e) { System.out.println("Socket Close Error"); }
@@ -120,7 +121,7 @@ public class Battleship {
 			if (data.contains("Welcome")) {
 				String[] welcomeMsg = this.data.split(":");
 				placeShips(welcomeMsg[1]);
-				if (data.contains("Destroyer")) { // Only Place Can Receive Double Message, Pass Through
+				if (data.contains("Destroyer")) {
 					this.dataPassthrough = "Destroyer(2):";
 				}
 			} else if (data.contains("Destroyer")) {
