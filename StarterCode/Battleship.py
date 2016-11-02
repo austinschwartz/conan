@@ -1,3 +1,4 @@
+#!/usr/local/bin/python3
 '''
 	@ AUTHOR NAME HERE
 	@ Starter Code By Harris Christiansen (Harris@purduecs.com)
@@ -66,7 +67,7 @@ def connectToServer():
 
 		if("False" in data):
 			s = None
-			print "Invalid API_KEY"
+			print("Invalid API_KEY")
 			invalidKey = True
 	except:
 		s = None
@@ -170,6 +171,6 @@ while True:
 	if s != None:
 		try:
 			gameMain()
-		except socket.error, msg:
+		except (socket.error, msg):
 			None
 	time.sleep(1)
