@@ -14,7 +14,10 @@ import java.lang.Thread;
 
 public class Battleship {
 	public static String API_KEY = System.getenv("BattleShipAPIKey");
-	public static String GAME_SERVER = "localhost:23346";
+  static{
+  System.out.println(API_KEY);
+  }
+	public static String GAME_SERVER = "127.0.0.1";
 
 	//////////////////////////////////////  PUT YOUR CODE HERE //////////////////////////////////////
 
@@ -75,16 +78,16 @@ public class Battleship {
 
 	void connectToServer() {
 		try {
-			InetAddress addr = InetAddress.getByName(GAME_SERVER);
+			//InetAddress addr = InetAddress.getByName(GAME_SERVER);
+      InetAddress addr = InetAddress.getLocalHost();
 			socket = new Socket(addr, 23345);
 			br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			out = new PrintWriter(socket.getOutputStream(), true);
-
 			out.print(API_KEY);
 			out.flush();
 			data = br.readLine();
 		} catch (Exception e) {
-			System.out.println("Error: when connecting to the server...");
+			System.out.println("Error: when connecting to the server..." + e.toString());
 			socket = null; 
 		}
 
