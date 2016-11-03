@@ -14,7 +14,7 @@ import java.lang.Thread;
 
 public class Battleship {
 	public static String API_KEY = System.getenv("BattleShipAPIKey");
-	public static String GAME_SERVER = "battleshipgs.purduehackers.com";
+	public static String GAME_SERVER = "localhost:23346";
 
 	//////////////////////////////////////  PUT YOUR CODE HERE //////////////////////////////////////
 
