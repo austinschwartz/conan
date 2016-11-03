@@ -12,48 +12,106 @@ import java.util.*;
 import java.net.Socket;
 import java.net.InetAddress;
 import java.lang.Thread;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Battleship {
 	public static String API_KEY = System.getenv("BattleShipAPIKey");
 	public static String GAME_SERVER = "battleshipgs.purduehackers.com";
   public static char[] letters = new char[] {'A','B','C','D','E','F','G','H'};
+  public static int WIDTH = 8, HEIGHT = 8;
+  public static enum State { UNKNOWN, MISS, HIT, SUNK, SUNKSHIP };
 
-  BitSet used;
-  BitSet hit;
-  BitSet sunk;
+  List<Integer> remainingShips;
+  List<int[]> mustExplore;
+  State[][] grid;
+  int[][] left, right, up, down;
+  int[][] space, hits;
+
+  Random rand = new Random();
 
   public String convertToBoardPos(int i, int j) {
     return this.letters[i] + String.valueOf(j);
   }
 
-  public BitSet convertToSet(int i, int j) {
-    BitSet set = new BitSet();
-    set.set((i * 8) + j);
-    return set;
-  }
-
 	void placeShips(String opponentID) {
-    used = new BitSet(64);
-    hit = new BitSet(64);
-    sunk = new BitSet(64);
-		placeDestroyer("D0", "D1");
-		placeSubmarine("E0", "E2");
-		placeCruiser("F0", "F2");
-		placeBattleship("G0", "G3");
-		placeCarrier("H0", "H4");
+    remainingShips = new ArrayList<>();
+    mustExplore = new ArrayList<>();
+    grid = new State[WIDTH][HEIGHT];
+    left = new int[WIDTH][HEIGHT];
+    right = new int[WIDTH][HEIGHT];
+    up = new int[WIDTH][HEIGHT];
+    down = new int[WIDTH][HEIGHT];
+    space = new int[WIDTH][HEIGHT];
+    hits = new int[WIDTH][HEIGHT];
+    threePlaced = false;
+    boolean[][] curr = new boolean[WIDTH][HEIGHT];
+    for (int i = 0; i < WIDTH; i++)
+      Arrays.fill(curr[i], false);
+    int[] ships = new int[]{2, 3, 3, 4, 5};
+    for (int ship : ships) {
+      place(curr, ship);
+      if (ship == 3)
+        threePlaced = true;
+    }
+    curr = null;
 	}
+  public static enum Direction {DOWN, RIGHT};
+
+  void place(boolean[][] curr, int len) {
+    int i = -1, j = -1;
+    int count = 0;
+    Direction dir = Direction.RIGHT;
+    while (true) {
+      System.out.println(i + " " + j);
+      i = ThreadLocalRandom.current().nextInt(0, 8);
+      j = ThreadLocalRandom.current().nextInt(0, 8 - len);
+
+      count = 0;
+      dir = Direction.RIGHT;
+      for (int k = 0; k < len; k++) {
+        int nj = j + k;
+        if (curr[i][nj] == true)
+          break;
+        curr[i][nj] = true;
+        count += 1;
+      }
+      if (count == len) break; 
+
+      i = ThreadLocalRandom.current().nextInt(0, 8 - len);
+      j = ThreadLocalRandom.current().nextInt(0, 8);
+
+      count = 0;
+      dir = Direction.DOWN;
+      for (int k = 0; k < len; k++) {
+        int ni = i + k;
+        if (curr[ni][j] == true)
+          break;
+        curr[ni][j] = true;
+        count += 1;
+      }
+      if (count == len) break;
+    }
+    if (dir == Direction.RIGHT)
+      placeShip(len, convertToBoardPos(i, j), convertToBoardPos(i, j + len - 1));
+    else if (dir == Direction.DOWN)
+      placeShip(len, convertToBoardPos(i, j), convertToBoardPos(i, j + len - 1));
+  }
 
 	void makeMove() {
 		for(int i = 0; i < 8; i++) {
 			for(int j = 0; j < 8; j++) {
-        int bit = (i * 8) + j;
-				if (!used.get(bit)) {
-          used.set(bit);
-					String wasHitSunkOrMiss = placeMove(i, j);
-					if (wasHitSunkOrMiss.equals("Hit"))
-            hit.set(bit);
-          if (wasHitSunkOrMiss.equals("Sunk"))
-            sunk.set(bit);
+				if (grid[i][j] == State.UNKNOWN) {
+					switch (placeMove(i, j)) {
+            case "Hit":
+              grid[i][j] = State.HIT;
+              break;
+            case "Sunk":
+              grid[i][j] = State.SUNK;
+              break;
+            case "Miss":
+              grid[i][j] = State.MISS;
+              break;
+          }
 					return;
 				}
 			}
@@ -69,17 +127,14 @@ public class Battleship {
 	String[] battleship = new String[] {"A0", "A0"};
 	String[] carrier = new String[] {"A0", "A0"};
 
+  boolean threePlaced = false;
+	Boolean moveMade = false;
 	String dataPassthrough;
 	String data;
 	BufferedReader br;
 	PrintWriter out;
-	Boolean moveMade = false;
 
-	public Battleship() {
-    this.sunk = new BitSet(64);
-    this.hit = new BitSet(64);
-    this.used = new BitSet(64);
-	}
+	public Battleship() {}
 
 	void connectToServer() {
 		try {
@@ -169,25 +224,28 @@ public class Battleship {
 		}
 	}
 
-	void placeDestroyer(String startPos, String endPos) {
-		destroyer = new String[] {startPos.toUpperCase(), endPos.toUpperCase()}; 
-	}
-
-	void placeSubmarine(String startPos, String endPos) {
-		submarine = new String[] {startPos.toUpperCase(), endPos.toUpperCase()}; 
-	}
-
-	void placeCruiser(String startPos, String endPos) {
-		cruiser = new String[] {startPos.toUpperCase(), endPos.toUpperCase()}; 
-	}
-
-	void placeBattleship(String startPos, String endPos) {
-		battleship = new String[] {startPos.toUpperCase(), endPos.toUpperCase()}; 
-	}
-
-	void placeCarrier(String startPos, String endPos) {
-		carrier = new String[] {startPos.toUpperCase(), endPos.toUpperCase()}; 
-	}
+  void placeShip(int len, String startPos, String endPos) {
+    System.out.println("Placing ship " + len + " at " + startPos + " " + endPos);
+    switch (len) {
+      case 2:
+        destroyer = new String[] {startPos.toUpperCase(), endPos.toUpperCase()}; 
+        break;
+      case 3:
+        if (!threePlaced) {
+          submarine = new String[] {startPos.toUpperCase(), endPos.toUpperCase()}; 
+          threePlaced = true;
+        } else {
+          cruiser = new String[] {startPos.toUpperCase(), endPos.toUpperCase()}; 
+        }
+        break;
+      case 4:
+        battleship = new String[] {startPos.toUpperCase(), endPos.toUpperCase()}; 
+        break;
+      case 5:
+        carrier = new String[] {startPos.toUpperCase(), endPos.toUpperCase()}; 
+        break;
+    }
+  }
 
 	String placeMove(int i, int j) {
     String pos = convertToBoardPos(i, j);
