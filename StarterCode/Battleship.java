@@ -8,27 +8,34 @@
  */
 
 import java.io.*;
+import java.util.*;
 import java.net.Socket;
 import java.net.InetAddress;
 import java.lang.Thread;
 
 public class Battleship {
 	public static String API_KEY = System.getenv("BattleShipAPIKey");
-  static{
-  System.out.println(API_KEY);
+	public static String GAME_SERVER = "battleshipgs.purduehackers.com";
+  public static char[] letters = new char[] {'A','B','C','D','E','F','G','H'};
+
+  BitSet used;
+  BitSet hit;
+  BitSet sunk;
+
+  public String convertToBoardPos(int i, int j) {
+    return this.letters[i] + String.valueOf(j);
   }
-	public static String GAME_SERVER = "127.0.0.1";
 
-	//////////////////////////////////////  PUT YOUR CODE HERE //////////////////////////////////////
-
-	char[] letters;
-	int[][] grid;
+  public BitSet convertToSet(int i, int j) {
+    BitSet set = new BitSet();
+    set.set((i * 8) + j);
+    return set;
+  }
 
 	void placeShips(String opponentID) {
-		// Fill Grid With -1s
-		for(int i = 0; i < grid.length; i++) { for(int j = 0; j < grid[i].length; j++) grid[i][j] = -1; }
-
-		// Place Ships
+    used = new BitSet(64);
+    hit = new BitSet(64);
+    sunk = new BitSet(64);
 		placeDestroyer("D0", "D1");
 		placeSubmarine("E0", "E2");
 		placeCruiser("F0", "F2");
@@ -39,14 +46,14 @@ public class Battleship {
 	void makeMove() {
 		for(int i = 0; i < 8; i++) {
 			for(int j = 0; j < 8; j++) {
-				if (this.grid[i][j] == -1) {
-					String wasHitSunkOrMiss = placeMove(this.letters[i] + String.valueOf(j));
-
-					if (wasHitSunkOrMiss.equals("Hit") || wasHitSunkOrMiss.equals("Sunk")) {
-						this.grid[i][j] = 1;
-					} else {
-						this.grid[i][j] = 0;			
-					}
+        int bit = (i * 8) + j;
+				if (!used.get(bit)) {
+          used.set(bit);
+					String wasHitSunkOrMiss = placeMove(i, j);
+					if (wasHitSunkOrMiss.equals("Hit"))
+            hit.set(bit);
+          if (wasHitSunkOrMiss.equals("Sunk"))
+            sunk.set(bit);
 					return;
 				}
 			}
@@ -56,7 +63,11 @@ public class Battleship {
 	////////////////////////////////////// ^^^^^ PUT YOUR CODE ABOVE HERE ^^^^^ //////////////////////////////////////
 
 	Socket socket;
-	String[] destroyer, submarine, cruiser, battleship, carrier;
+	String[] destroyer = new String[] {"A0", "A0"};
+	String[] submarine = new String[] {"A0", "A0"};
+	String[] cruiser = new String[] {"A0", "A0"};
+	String[] battleship = new String[] {"A0", "A0"};
+	String[] carrier = new String[] {"A0", "A0"};
 
 	String dataPassthrough;
 	String data;
@@ -65,24 +76,19 @@ public class Battleship {
 	Boolean moveMade = false;
 
 	public Battleship() {
-		this.grid = new int[8][8];
-		for(int i = 0; i < grid.length; i++) { for(int j = 0; j < grid[i].length; j++) grid[i][j] = -1; }
-		this.letters = new char[] {'A','B','C','D','E','F','G','H'};
-
-		destroyer = new String[] {"A0", "A0"};
-		submarine = new String[] {"A0", "A0"};
-		cruiser = new String[] {"A0", "A0"};
-		battleship = new String[] {"A0", "A0"};
-		carrier = new String[] {"A0", "A0"};
+    this.sunk = new BitSet(64);
+    this.hit = new BitSet(64);
+    this.used = new BitSet(64);
 	}
 
 	void connectToServer() {
 		try {
-			//InetAddress addr = InetAddress.getByName(GAME_SERVER);
-      InetAddress addr = InetAddress.getLocalHost();
+			InetAddress addr = InetAddress.getByName(GAME_SERVER);
+      //InetAddress addr = InetAddress.getLocalHost();
 			socket = new Socket(addr, 23345);
 			br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			out = new PrintWriter(socket.getOutputStream(), true);
+      System.out.println(API_KEY);
 			out.print(API_KEY);
 			out.flush();
 			data = br.readLine();
@@ -183,8 +189,9 @@ public class Battleship {
 		carrier = new String[] {startPos.toUpperCase(), endPos.toUpperCase()}; 
 	}
 
-	String placeMove(String pos) {
-		if(this.moveMade) { // Check if already made move this turn
+	String placeMove(int i, int j) {
+    String pos = convertToBoardPos(i, j);
+		if (this.moveMade) { // Check if already made move this turn
 			System.out.println("Error: Please Make Only 1 Move Per Turn.");
 			System.exit(1); // Close Client
 		}
