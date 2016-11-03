@@ -21,12 +21,12 @@ from twisted.internet import reactor
 
 ############################################ Socket Server ############################################
 
-API_URL = "http://battleship.purduehackers.com/api/"
-DEBUG_ENABLED = False
+API_URL = "http://battleship.purduecs.com/api/"
+DEBUG_ENABLED = True
 GAME_MODE = 0 # 0 = Normal, 1 = Random, 2 = Tournament
 DEFAULT_DELAY_LENGTH = 0.2
 MOVE_TIMEOUT = 10
-PORT_GAME_SERVER = 23345
+PORT_GAME_SERVER = 23347
 PORT_GAME_LISTENER = 23346
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -419,11 +419,12 @@ def getPlayer():
 	except: # Timed Out
 		p.close()
 		return
-
+	print(apikey)
 	userID = "NO ID"
 	if not "API_KEY_HERE" in apikey:
 		# Verify API_KEY
 		content = urllib.urlopen(API_URL+'auth/'+apikey).read()
+		print(content)
 		if "False" in content: # Invalid API_KEY
 			p.sendall("False\n")
 			p.close()
@@ -500,7 +501,7 @@ if __name__ == "__main__":
 	########## Start Web Sockets ##########
 	if DEBUG_ENABLED:
 		log.startLogging(sys.stdout)
-	factory = WebSocketServerFactory(u"ws://127.0.0.1:"+str(PORT_GAME_LISTENER), debug=DEBUG_ENABLED)
+	factory = WebSocketServerFactory(u"ws://127.0.0.1:"+str(PORT_GAME_LISTENER))
 	factory.protocol = GameViewer
 	# factory.setProtocolOptions(maxConnections=2)
 	reactor.listenTCP(PORT_GAME_LISTENER, factory)
