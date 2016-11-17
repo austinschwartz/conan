@@ -12,58 +12,129 @@ import java.net.Socket
 import java.net.InetAddress
 import java.lang.Thread
 
+import scala.collection.mutable
+
 object Battleship {
+  class Ship(var name: String, var length: Int, var startPos: (String, String));
+
   def main(args: Array[String]) {
     while (true) {
       this.connectToServer
       if (this.socket != null)
         gameMain
     }
+//    randomizeShips(List(2, 3, 3, 4, 5))
+//    ships.map((x: Ship) => {
+//      val i: (String, String) = x.startPos
+//      println("<" + i._1 + " " + i._2 + ">")
+//    })
+//    placeShips("SHWR")
+//    printBoard(this.mygrid)
   }
 
-  var API_KEY: String = "API_KEY_HERE"
+  val DIM = 8
+  var DEBUG = false
+
+  val rand = new scala.util.Random
+
+  var API_KEY: String = "835619560"
   var GAME_SERVER: String = "battleshipgs.purduehackers.com"
 
   var letters: Array[Char] = Array[Char]('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H')
-  var grid: Array[Array[Int]] = Array.ofDim[Int](8,8)
+  var grid: Array[Array[Int]] = Array.ofDim[Int](DIM,DIM)
+  var mygrid: Array[Array[Int]] = Array.ofDim[Int](DIM,DIM)
 
-  var destroyer = Array[String]("A0", "A0")
-  var submarine = Array[String]("A0", "A0")
-  var cruiser = Array[String]("A0", "A0")
-  var battleship = Array[String]("A0", "A0")
-  var carrier = Array[String]("A0", "A0")
+  def rcToLetters(r: Int, c: Int): String = letters(r) + "" + String.valueOf(c)
+  def lettersToRC(str: String): (Int, Int) = (letters.indexOf(str(0)), Integer.valueOf(str(1)) - '0')
 
-  def placeShips(opponentID: String) {
+  var destroyer = new Ship("destroyer", 2, ("A0", "A1")) // 2
+  var submarine = new Ship("destroyer", 3, ("B0", "B2")) // 3
+  var cruiser = new Ship("cruiser", 3, ("C0", "C2")) // 3
+  var battleship = new Ship("battleship", 4, ("D0", "D3")) // 4
+  var carrier = new Ship("carrier", 5, ("E0", "E4")) // 5
+  var ships = List[Ship](destroyer, submarine, cruiser, battleship, carrier)
+  var shipMap = Map(
+    "destroyer" -> destroyer,
+    "submarine" -> submarine,
+    "cruiser" -> cruiser,
+    "battleship" -> battleship,
+    "carrier" -> carrier
+  )
+
+  def isValidPlacement(rs: (Int, Int), cs: (Int, Int)): Boolean = {
+    (rs._1 to rs._2).foreach((r: Int) => {
+      (cs._1 to cs._2).foreach((c: Int) => {
+        if (mygrid(r)(c) != -1)
+          return false
+      })
+    })
+    true
+  }
+
+  def printBoard(g: Array[Array[Int]]): Unit = {
+    g.foreach((row: Array[Int]) => {
+      row.foreach((u: Int) => {
+        if (u == -1)
+          print(' ')
+        else
+          print('o')
+      })
+      println()
+    })
+  }
+
+  def isValidPlacement(rs: String, cs: String): Boolean = isValidPlacement(lettersToRC(rs), lettersToRC(cs))
+
+  def placeShipRandom(ship: Ship): Unit = {
+    var placed: Boolean = false
+    while (!placed) {
+      var row = rand.nextInt(DIM)
+      var col = rand.nextInt(DIM)
+      placed = true
+    }
+  }
+
+  def randomizeShips(lengths: List[Int]): Unit =  {
+    ships.reverse.foreach((ship: Ship) => {
+      placeShipRandom(ship)
+    })
+  }
+
+  def placeShips(opponentID: String): Unit = {
     var i = 0
     for (i <- 0 until 8) {
       var j = 0
       for (j <- 0 until 8) {
+        mygrid(i)(j) = -1
         grid(i)(j) = -1
       }
     }
 
-    placeDestroyer("A0", "A1")
-    placeSubmarine("B0", "B2")
-    placeCruiser("C0", "C2")
-    placeBattleship("D0", "D3")
-    placeCarrier("E0", "E4")
+    //randomizeShips(ships)
+    ships.foreach((ship: Ship) => {
+      var start: (Int, Int) = lettersToRC(ship.startPos._1)
+      var end: (Int, Int) = lettersToRC(ship.startPos._2)
+      (start._1 to end._1).foreach((r: Int) => {
+        (start._2 to end._2).foreach((c: Int) => {
+          mygrid(r)(c) = 1
+        })
+      })
+    })
   }
 
-  def makeMove {
-    var i = 0
-    for (i <- 0 until 8) {
-      var j = 0
-      for (j <- 0 until 8) {
-        if (this.grid(i)(j) == -1) {
-          val wasHitSunkOrMiss: String = placeMove(this.letters(i) + String.valueOf(j))
-          if (wasHitSunkOrMiss == "Hit" || wasHitSunkOrMiss == "Sunk") {
-            this.grid(i)(j) = 1
-          }
-          else {
-            this.grid(i)(j) = 0
-          }
-          return
-        }
+
+  def makeMove(): Unit = {
+    while (true) {
+      var i = rand.nextInt(DIM)
+      var j = rand.nextInt(DIM)
+      if (DEBUG) println(i, j)
+      if (grid(i)(j) == -1) {
+        val wasHitSunkOrMiss: String = placeMove(rcToLetters(i, j))
+        if (wasHitSunkOrMiss == "Hit" || wasHitSunkOrMiss == "Sunk")
+          grid(i)(j) = 1
+        else
+          grid(i)(j) = 0
+        return
       }
     }
   }
@@ -75,7 +146,7 @@ object Battleship {
   var out: PrintWriter = null
   var moveMade: Boolean = false
 
-  def connectToServer {
+  def connectToServer: Unit = {
     try {
       val addr: InetAddress = InetAddress.getByName(this.GAME_SERVER)
       socket = new Socket(addr, 23345)
@@ -98,7 +169,7 @@ object Battleship {
     }
   }
 
-  def gameMain {
+  def gameMain: Unit = {
     while (true) {
       {
         try {
@@ -127,6 +198,8 @@ object Battleship {
           }
           return
         }
+        if (DEBUG)
+          println(data)
         if (data.contains("Welcome")) {
           val welcomeMsg: Array[String] = this.data.split(":")
           placeShips(welcomeMsg(1))
@@ -135,28 +208,28 @@ object Battleship {
           }
         }
         else if (data.contains("Destroyer")) {
-          this.out.print(destroyer(0))
-          this.out.print(destroyer(1))
+          this.out.print(destroyer.startPos._1)
+          this.out.print(destroyer.startPos._2)
           out.flush
         }
         else if (data.contains("Submarine")) {
-          this.out.print(submarine(0))
-          this.out.print(submarine(1))
+          this.out.print(submarine.startPos._1)
+          this.out.print(submarine.startPos._2)
           out.flush
         }
         else if (data.contains("Cruiser")) {
-          this.out.print(cruiser(0))
-          this.out.print(cruiser(1))
+          this.out.print(cruiser.startPos._1)
+          this.out.print(cruiser.startPos._2)
           out.flush
         }
         else if (data.contains("Battleship")) {
-          this.out.print(battleship(0))
-          this.out.print(battleship(1))
+          this.out.print(battleship.startPos._1)
+          this.out.print(battleship.startPos._2)
           out.flush
         }
         else if (data.contains("Carrier")) {
-          this.out.print(carrier(0))
-          this.out.print(carrier(1))
+          this.out.print(carrier.startPos._1)
+          this.out.print(carrier.startPos._2)
           out.flush
         }
         else if (data.contains("Enter")) {
@@ -177,26 +250,6 @@ object Battleship {
         }
       }
     }
-  }
-
-  def placeDestroyer(startPos: String, endPos: String) {
-    destroyer = Array[String](startPos.toUpperCase, endPos.toUpperCase)
-  }
-
-  def placeSubmarine(startPos: String, endPos: String) {
-    submarine = Array[String](startPos.toUpperCase, endPos.toUpperCase)
-  }
-
-  def placeCruiser(startPos: String, endPos: String) {
-    cruiser = Array[String](startPos.toUpperCase, endPos.toUpperCase)
-  }
-
-  def placeBattleship(startPos: String, endPos: String) {
-    battleship = Array[String](startPos.toUpperCase, endPos.toUpperCase)
-  }
-
-  def placeCarrier(startPos: String, endPos: String) {
-    carrier = Array[String](startPos.toUpperCase, endPos.toUpperCase)
   }
 
   def placeMove(pos: String): String = {

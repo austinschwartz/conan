@@ -13,7 +13,7 @@ import time
 
 API_KEY = "API_KEY_HERE" ########## PUT YOUR API KEY HERE ##########
 
-GAME_SERVER = "battleshipgs.purduehackers.com"
+GAME_SERVER = "835619560"
 
 ##############################  PUT YOUR CODE HERE ##############################
 
