@@ -1,3 +1,4 @@
+
 /**
   * @ AUTHOR NAME HERE
   * @ Starter Code By Guocheng
@@ -16,14 +17,35 @@ import java.util.Arrays
 import scala.collection.mutable
 import scala.util.control.Breaks
 
-object Battleship {
+object Shitbot {
+  def main(args: Array[String]) {
+    val fuckScala = new Breaks
+    var flag = false
+    if (!flag) {
+      fuckScala.breakable {
+        while (true) {
+          try {
+            this.connectToServer
+            if (this.socket != null)
+              gameMain
+          } catch {
+            case e: Exception => {
+              println(e.toString())
+              flag = true
+              fuckScala.break()
+            }
+          }
+        }
+      }
+    }
+  }
   class Ship(
-    var name: String,
-    var length: Int,
-    var i: Int,
-    var j: Int,
-    var dir: Direction
-  ) {
+              var name: String,
+              var length: Int,
+              var i: Int,
+              var j: Int,
+              var dir: Direction
+            ) {
     var startPos = getPos(i, j, dir, length)
 
     def getPos(r: Int, c: Int, direc: Direction, len: Int): (String, String) = {
@@ -48,34 +70,6 @@ object Battleship {
       })
       false
     }
-  }
-
-  def main(args: Array[String]) {
-    val fuckScala = new Breaks
-    var flag = false
-    if (!flag) {
-      fuckScala.breakable {
-        while (true) {
-          try {
-            this.connectToServer
-            if (this.socket != null)
-              gameMain
-          } catch {
-            case e: Exception => {
-              println(e.toString())
-              flag = true
-              fuckScala.break()
-            }
-          }
-        }
-      }
-    }
-//    placeShips("SHWR")
-//    ships.map((x: Ship) => {
-//      val i: (String, String) = x.startPos
-//      println("<" + i._1 + " " + i._2 + ">")
-//    })
-//    printBoard(this.mygrid)
   }
 
   sealed trait Direction
@@ -219,7 +213,6 @@ object Battleship {
       grid(i)(j) = -1
     }
 
-    randomizeShips()
     printBoard(mygrid)
   }
 
@@ -233,8 +226,7 @@ object Battleship {
     var higherC = Math.max(start._2, end._2)
     (lowerR to higherR).foreach((r: Int) => {
       (lowerC to higherC).foreach((c: Int) => {
-        //println((r, c))
-        mygrid(r)(c) = 1 // wtf?
+        mygrid(r)(c) = 1
       })
     })
   }
@@ -277,11 +269,11 @@ object Battleship {
   }
 
   def getNextMove(): (Int, Int) = {
-    while (this.hitNext.length > 0) {
-      val move = this.hitNext.pop()
-      if (grid(move._1)(move._2) == -1)
-        return move
-    }
+    //    while (this.hitNext.length > 0) {
+    //      val move = this.hitNext.pop()
+    //      if (grid(move._1)(move._2) == -1)
+    //        return move
+    //    }
     //getRandomMove()
     getEvenParityMove()
   }
@@ -446,3 +438,4 @@ object Battleship {
     }
   }
 }
+
