@@ -99,6 +99,11 @@ object Battleship {
   var API_KEY: String = "877036648"
   var GAME_SERVER: String = "battleshipgs.purduehackers.com"
 
+  var spiralStack: mutable.Stack[(Int, Int)] = mutable.Stack[(Int, Int)](
+    (4,3), (3,4), (3,2), (4,5), (5,4), (2,3), (5,2), (2,5), (6,3), (1,4),
+    (3,6), (4,1), (2,1), (1,2), (6,5), (5,6), (4,7), (3,0), (7,4), (0,3)
+  )
+
   var letters: Array[Char] = Array[Char]('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H')
   var grid: Array[Array[Int]] = Array.ofDim[Int](DIM,DIM)
   var stateGrid: Array[Array[State]] = Array.ofDim[State](DIM,DIM)
@@ -274,6 +279,17 @@ object Battleship {
     (0, 0)
   }
 
+  def getProbabilisticMove(): (Int, Int) = {
+    while (spiralStack.length > 0) {
+      val (r, c) = spiralStack.pop()
+      if (grid(r)(c) == -1) {
+        print("probabilistic ", (r, c))
+        return (r, c)
+      }
+    }
+    return getEvenParityMove()
+  }
+
   def getNextMove(): (Int, Int) = {
     while (this.hitNext.length > 0) {
       val move = this.hitNext.pop()
@@ -281,7 +297,12 @@ object Battleship {
         return move
     }
     //getRandomMove()
-    getEvenParityMove()
+    var coinFlip = rand.nextInt(100)
+    if (coinFlip > 60 && spiralStack.length > 0) {
+      return getProbabilisticMove()
+    } else {
+      return getEvenParityMove()
+    }
   }
 
   def makeMove(): Unit = {
