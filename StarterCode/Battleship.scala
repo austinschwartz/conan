@@ -10,8 +10,6 @@
 import java.io._
 import java.net.Socket
 import java.net.InetAddress
-import java.lang.Thread
-import java.util.Arrays
 
 import scala.collection.mutable
 import scala.util.control.Breaks
@@ -98,7 +96,7 @@ object Battleship {
 
   val rand = new scala.util.Random
 
-  var API_KEY: String = "835619560"
+  var API_KEY: String = "877036648"
   var GAME_SERVER: String = "battleshipgs.purduehackers.com"
 
   var letters: Array[Char] = Array[Char]('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H')
